@@ -1,0 +1,1227 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Valoración Online</title>
+<link rel="preconnect" href="https://unpkg.com">
+<link rel="preconnect" href="https://cdn.tailwindcss.com">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<style>
+/* PREVENT IOS SCROLL BOUNCE & BUTTON CUTOFF */
+html, body { min-height: 100vh; height: auto; overflow-y: auto; -webkit-overflow-scrolling: touch; font-family:'Sora', sans-serif; background-color:transparent; margin:0; padding:0; }
+
+/* PREVENT IOS ZOOM ON ALL INPUTS */
+input, select, textarea { font-size: 16px !important; }
+
+::-webkit-scrollbar { display: none; }
+.init-loader{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:sans-serif;}
+.init-spinner{width:40px;height:40px;border:4px solid #f3f4f6;border-top:4px solid #04A3E3;border-radius:50%;animation:spin 1s linear infinite;margin-bottom:12px;}
+@keyframes spin{0%{transform:rotate(0deg);}100%{transform:rotate(360deg);}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes scaleIn{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
+@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes popIn{0%{opacity:0;transform:scale(0.95)}100%{opacity:1;transform:scale(1)}}
+@keyframes expandDown{from{opacity:0;transform:scaleY(0.95);transform-origin:top}to{opacity:1;transform:scaleY(1);transform-origin:top}}
+.anim-slide-up{animation:slideUp 0.6s cubic-bezier(0.16,1,0.3,1) forwards}
+.anim-pop-in{animation:popIn 0.4s cubic-bezier(0.16,1,0.3,1) forwards}
+.anim-expand{animation:expandDown 0.3s cubic-bezier(0.16,1,0.3,1) forwards}
+
+select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%239ca3af'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 1rem center;background-size:1em;padding-right:2.5rem}
+
+.font-montserrat{font-family:'Montserrat',sans-serif;}
+@keyframes shimmer-text{0%{background-position:-200% center;}100%{background-position:200% center;}}
+.animate-shimmer-text{background:linear-gradient(90deg,#64748b 0%,#0f172a 50%,#64748b 100%);background-size:200% auto;color:transparent;-webkit-background-clip:text;background-clip:text;animation:shimmer-text 2s linear infinite;}
+
+@keyframes bounce-dot { 0%, 80%, 100% { transform: translateY(0); } 40% { transform: translateY(-6px); } }
+.dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin: 0 2px; animation: bounce-dot 1.4s infinite ease-in-out both; }
+.dot-1 { animation-delay: -0.32s; }
+.dot-2 { animation-delay: -0.16s; }
+
+/* LIQUID WAVE ANIMATIONS */
+@keyframes wave-drift { 0% { transform: translateX(0); } 100% { transform: translateX(-60px); } }
+@keyframes wave-drift-reverse { 0% { transform: translateX(-60px); } 100% { transform: translateX(0); } }
+.wave-front { animation: wave-drift 2s linear infinite; opacity: 0.5; }
+.wave-back { animation: wave-drift-reverse 3s linear infinite; opacity: 0.25; }
+.liquid-fill-container { transition: transform 0.4s ease-out; }
+.shimmer-text { animation: pulse-shimmer 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+@keyframes pulse-shimmer { 0%, 100% { opacity: 0.9; } 50% { opacity: 0.6; } }
+</style>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800;900&family=Montserrat:wght@700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+<div id="init-loader" class="init-loader">
+  <div class="init-spinner"></div>
+  <p style="font-weight:600; font-size:14px; color:#04A3E3; margin:0;">Iniciando motor...</p>
+</div>
+<div id="valuation-engine-root"></div>
+
+<script>
+window.__APP_BLOCKED__ = false;
+(function(){
+  var allowedDomains = ["softr.app","sowper.com","valoratucasaengrancanaria.es","valoratucasaenvalencia.es","valoracionesinmopeople.es","https://valoratucasaenvalencia.es"];
+  var detectedHosts = [];
+  var isAllowed = false;
+  
+  if (window.top === window.self) {
+      isAllowed = true; 
+  } else {
+      if (document.referrer) {
+          try { detectedHosts.push(new URL(document.referrer).hostname); } catch(e){}
+      }
+      if (window.location.ancestorOrigins) {
+          for (var i = 0; i < window.location.ancestorOrigins.length; i++) {
+              try { detectedHosts.push(new URL(window.location.ancestorOrigins[i]).hostname); } catch(e){}
+          }
+      }
+      
+      var realHosts = detectedHosts.filter(function(h) {
+          return h.indexOf("googleusercontent.com") === -1 && h.indexOf("script.google.com") === -1;
+      });
+
+      if (realHosts.length > 0) {
+          isAllowed = realHosts.some(function(h) {
+              return allowedDomains.some(function(d){ return h.indexOf(d.trim()) !== -1; });
+          });
+      } else {
+          isAllowed = true; 
+      }
+  }
+
+  if(!isAllowed){
+    window.__APP_BLOCKED__ = true;
+    var badHost = realHosts.length > 0 ? realHosts[0] : "Desconocido";
+    console.error("Widget bloqueado: Dominio no autorizado (" + badHost + "). Por favor, añade este dominio en tu Google Sheet.");
+    document.getElementById('init-loader').innerHTML = "<div style='text-align:center; padding:20px; border:2px solid red; border-radius:12px; background:white;'><p style='color:red; font-weight:bold; font-size:18px; margin-bottom:8px;'>Acceso Denegado</p><p style='color:#333; font-size:14px;'>El dominio <b>" + badHost + "</b> no está autorizado.</p></div>";
+    return; 
+  }
+
+  window.gm_authFailure=function(){console.error("Google Maps Auth Failure.")};
+  window.initMap=function(){window.isGoogleMapsLoaded=true;window.dispatchEvent(new Event("google-maps-loaded"))};
+
+  var k = ["AIzaSyAc", "FfrHuD-S", "TuzT9X7L", "Yj6rnXaC", "AaE8pX4"].join("");
+  var script = document.createElement("script");
+  script.src = "https://maps.googleapis.com/maps/api/js?key=" + k + "&libraries=places&callback=initMap";
+  script.async = true; script.defer = true;
+  document.head.appendChild(script);
+})();
+</script>
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+<script type="text/babel">
+const WEBHOOK_URL = "https://script.google.com/a/wedocreatives.com/macros/s/AKfycbxAJ0zDDLsDhJNo--loxNT_KLkloTgDbdwi8cQHtrAScEv8ffenL8txr4S9IazN4kDf/exec";
+var S = {"agencyId":"inmopeople","forceQuick":false,"primaryColor":"#04A3E3","textColor":"#04A3E3","buttonTextColor":"#FFFFFF","fontFamily":"'Sora', sans-serif","fontUrl":"Sora:wght@400;500;600;700;800;900","mandatoryFields":{"telefono":true},"showBorder":false,"aiValuationActive":true,"smsVerificationActive":false,"privacyPolicyUrl":"https://valoracionesinmopeople.es/politica-de-proteccion-de-datos/","propertyTypes":"Piso, Adosado, Ático, Chalet, Duplex, Independiente, Pareado","allowedDomains":["softr.app","sowper.com","valoratucasaengrancanaria.es","valoratucasaenvalencia.es","valoracionesinmopeople.es","https://valoratucasaenvalencia.es"],"texts":{"mainTitle":"Valoración gratuita online","mainSubtitle":"Introduce la ubicación de tu vivienda para empezar.","step2Title":"Cuéntanos sobre la vivienda","step3Title":"Finalizar","step4Title":"¿Qué extras tiene la finca?","successTitle":"¡Valoración completada!","successMessage":"Un experto se pondrá en contacto contigo muy pronto para finalizar la valoración.","ctaText":"Obtener Valoración"}};
+
+    if (window.__APP_BLOCKED__) { throw new Error("Initialization aborted due to security restrictions."); }
+
+    const { useState, useEffect, useRef } = React;
+    var S = {"agencyId":"inmopeople","forceQuick":false,"primaryColor":"#04A3E3","textColor":"#04A3E3","buttonTextColor":"#FFFFFF","fontFamily":"'Sora', sans-serif","fontUrl":"Sora:wght@400;500;600;700;800;900","mandatoryFields":{"telefono":true},"showBorder":false,"aiValuationActive":true,"smsVerificationActive":false,"privacyPolicyUrl":"https://valoracionesinmopeople.es/politica-de-proteccion-de-datos/","propertyTypes":"Piso, Adosado, Ático, Chalet, Duplex, Independiente, Pareado","allowedDomains":["softr.app","sowper.com","valoratucasaengrancanaria.es","valoratucasaenvalencia.es","valoracionesinmopeople.es","https://valoratucasaenvalencia.es"],"texts":{"mainTitle":"Valoración gratuita online","mainSubtitle":"Introduce la ubicación de tu vivienda para empezar.","step2Title":"Cuéntanos sobre la vivienda","step3Title":"Finalizar","step4Title":"¿Qué extras tiene la finca?","successTitle":"¡Valoración completada!","successMessage":"Un experto se pondrá en contacto contigo muy pronto para finalizar la valoración.","ctaText":"Obtener Valoración"}};
+    const btnTextColor = S.buttonTextColor || '#FFFFFF';
+    
+    const TIPOS = S.propertyTypes ? S.propertyTypes.split(',').map(t => t.trim()).filter(Boolean) : ['Piso'];
+    const MOTIVOS=['Alquilar','Comprar','Herencia','Hipoteca','Vender'];
+    const PLAZOS=['Cuanto antes','Menos de 3 meses','Más de 6 meses','Ya está en venta'];
+
+    // STRICT COUNTRY CONFIGURATION FOR EUROPE
+    const COUNTRY_CONFIG = {
+      '+34': { label: '🇪🇸 +34', max: 9, min: 9 },
+      '+44': { label: '🇬🇧 +44', max: 11, min: 10 },
+      '+33': { label: '🇫🇷 +33', max: 9, min: 9 },
+      '+49': { label: '🇩🇪 +49', max: 11, min: 10 },
+      '+39': { label: '🇮🇹 +39', max: 10, min: 9 },
+      '+351': { label: '🇵🇹 +351', max: 9, min: 9 },
+      '+32': { label: '🇧🇪 +32', max: 9, min: 8 },
+      '+31': { label: '🇳🇱 +31', max: 9, min: 9 },
+      '+41': { label: '🇨🇭 +41', max: 9, min: 9 },
+      '+43': { label: '🇦🇹 +43', max: 10, min: 10 },
+      '+46': { label: '🇸🇪 +46', max: 9, min: 7 },
+      '+47': { label: '🇳🇴 +47', max: 8, min: 8 },
+      '+48': { label: '🇵🇱 +48', max: 9, min: 9 }
+    };
+    
+    const COUNTRY_CODES = Object.keys(COUNTRY_CONFIG).map(code => ({ code, label: COUNTRY_CONFIG[code].label }));
+
+    // --- META (FACEBOOK) TRACKING CAPTURE ---
+    const readCookie = (name) => {
+      try {
+        const parts = document.cookie.split(';');
+        for (let i = 0; i < parts.length; i++) {
+          const kv = parts[i].trim();
+          if (kv.indexOf(name + '=') === 0) return decodeURIComponent(kv.substring(name.length + 1));
+        }
+      } catch(e) {}
+      return '';
+    };
+
+    const getParam = (name) => {
+      try { const fromTop = new URLSearchParams(window.top.location.search).get(name); if (fromTop) return fromTop; } catch(e) {}
+      try { return new URLSearchParams(window.location.search).get(name) || ''; } catch(e) { return ''; }
+    };
+
+    const getInitialTracking = () => ({
+      fbclid: getParam('fbclid'),
+      fbp: readCookie('_fbp'),
+      fbc: readCookie('_fbc'),
+      utmSource: getParam('utm_source'),
+      utmMedium: getParam('utm_medium'),
+      utmCampaign: getParam('utm_campaign'),
+      utmContent: getParam('utm_content'),
+      utmTerm: getParam('utm_term')
+    });
+
+    const INIT={idAgency:'',referenciaCatastral:'',codigoPostal:'',direccion:'',calle:'',numero:'',piso:'',puerta:'',ciudad:'',provincia:'',lat:0,lng:0,superficieConstruida:90,tipoVivienda:TIPOS[0] || 'Piso',habitaciones:2,banos:1,garaje:false,ascensor:false,trastero:false,piscina:false,esPropietario:true,motivoValoracion:'Vender',plazoVenta:'Menos de 3 meses',nombreCompleto:'',email:'',countryCode:'+34',telefono:'',consentimiento:false,honeypot:'',...getInitialTracking()};
+    
+    const ICONS={ 
+      elevator:'<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h2l1-2h12l1 2h2"/><rect x="5" y="10" width="14" height="10" rx="1" stroke-width="2"/><line x1="12" y1="10" x2="12" y2="20" stroke-width="2"/><path stroke-linecap="round" stroke-width="2" d="M8 13v4M16 16v-4"/>', 
+      pool:'<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2 16c1.5-1.5 3-2 4.5-1s3 1.5 4.5 0 3-1.5 4.5 0 3-1.5 4.5 0 3 1 4.5-1"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2 20c1.5-1.5 3-2 4.5-1s3 1.5 4.5 0 3-1.5 4.5 0 3 1 4.5-1"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12V6a3 3 0 016 0v1"/>', 
+      storage:'<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>', 
+      garage:'<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21V9l9-6 9 6v12"/><rect x="6" y="13" width="12" height="8" rx="1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 17h12"/>',
+      bed:'<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2 4v16M2 8h18a2 2 0 0 1 2 2v10M2 17h20M6 8v9"/>',
+      bath:'<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 6l-2.5-2.5a1.5 1.5 0 0 0-1-.5C4.683 3 4 3.683 4 4.5V17a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5M10 5L8 7M2 12h20M7 19v2M17 19v2"/>',
+      gps: '<circle cx="12" cy="12" r="3"></circle><path d="M19 12c0 3.866-3.134 7-7 7s-7-3.134-7-7 3.134-7 7-7 7 3.134 7 7z"></path><line x1="12" y1="2" x2="12" y2="5"></line><line x1="12" y1="19" x2="12" y2="22"></line><line x1="22" y1="12" x2="19" y2="12"></line><line x1="5" y1="12" x2="2" y2="12"></line>'
+    };
+
+    const AI_STEPS = [
+      "Localizando coordenadas del inmueble",
+      "Escaneando histórico de ventas en la zona",
+      "Analizando características y superficie",
+      "Ajustando algoritmo de valoración final"
+    ];
+
+    const getSecureMapUrl = (query) => "https://maps.google.com/maps?q=" + encodeURIComponent(query) + "&t=m&z=16&output=embed&iwloc=near";
+    
+    const toTitleCase = (str) => {
+        if (!str) return '';
+        let s = str.toLowerCase().replace(/(?:^|[\s-])[a-z\u00e0-\u00fc]/g, function(match) { return match.toUpperCase(); });
+        const minors = ['De', 'Del', 'La', 'Las', 'Los', 'Y', 'En', 'El'];
+        s = s.split(' ').map((word, index) => {
+            if (index > 0 && minors.includes(word)) return word.toLowerCase();
+            return word;
+        }).join(' ');
+        s = s.replace(/\b([dD])'([a-z\u00e0-\u00fc])/ig, (m, p1, p2) => p1.toLowerCase() + "'" + p2.toUpperCase());
+        return s;
+    };
+
+    // --- REUSABLE COMPONENTS ---
+    const DraggableMap = ({ fd, onPinMoved }) => {
+      const mapRef = useRef(null);
+      const mapInstanceRef = useRef(null);
+      const markerRef = useRef(null);
+
+      useEffect(() => {
+        if (!fd.lat || !fd.lng || !mapRef.current || !window.google) return;
+        const center = { lat: fd.lat, lng: fd.lng };
+        if (!mapInstanceRef.current) {
+          mapInstanceRef.current = new window.google.maps.Map(mapRef.current, {
+            center, zoom: 17, disableDefaultUI: true, zoomControl: true, gestureHandling: 'cooperative',
+            styles: [
+              { featureType: 'all', elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
+              { featureType: 'poi', stylers: [{ visibility: 'off' }] },
+              { featureType: 'transit', stylers: [{ visibility: 'off' }] },
+              { elementType: 'geometry', stylers: [{ saturation: -80 }] }
+            ]
+          });
+        }
+        if (!markerRef.current) {
+          markerRef.current = new window.google.maps.Marker({
+            position: center, map: mapInstanceRef.current, draggable: true, animation: window.google.maps.Animation.DROP, title: 'Mueve el pin para ajustar la posición exacta'
+          });
+          markerRef.current.addListener('dragend', (event) => {
+            onPinMoved(event.latLng.lat(), event.latLng.lng());
+          });
+        } else {
+          markerRef.current.setPosition(center); mapInstanceRef.current.panTo(center);
+        }
+      }, [fd.lat, fd.lng]);
+
+      if (!fd.lat || !fd.lng) return null;
+      return (
+        <div className="w-full mt-4 anim-pop-in">
+          <div ref={mapRef} style={{ width: '100%', height: '192px', borderRadius: '16px', overflow: 'hidden', border: '1px solid #e5e7eb' }} />
+          <p className="text-[11px] text-gray-400 font-medium mt-2 text-center flex items-center justify-center gap-1">Arrastra el pin para ajustar la posición exacta</p>
+        </div>
+      );
+    };
+
+    const isValidEmail = (email) => {
+      if(!email) return false;
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    };
+
+    const StepBar=({step,color})=>{
+      const steps=[{id:1,l:'Ubicación'},{id:2,l:'Vivienda'},{id:3,l:'Contacto'},{id:4,l:'Valoración'}];
+      return(
+        <div className="w-full">
+          <div className="flex justify-between relative">
+            <div className="absolute top-1/2 left-0 w-full h-0.5 bg-gray-200 -translate-y-1/2 z-0"/>
+            <div className="absolute top-1/2 left-0 h-0.5 -translate-y-1/2 z-0 transition-all duration-500" style={{width:((step-1)/3*100)+"%",backgroundColor:color}}/>
+            {steps.map(s=>{const a=s.id<=step,c=s.id===step;return(<div key={s.id} className="relative z-10 flex flex-col items-center"><div className={"w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-center text-xs sm:text-sm font-bold transition-all duration-300 "+(a?(S.showBorder?"shadow-md bg-white":"bg-white border-2 border-gray-200 text-gray-400"):"bg-white border-2 border-gray-200 text-gray-400 ")} style={{backgroundColor:a?color:'white',color:a?'white':undefined,borderColor:c?color:undefined}}>{s.id}</div><span className={"absolute top-8 sm:top-10 text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider whitespace-nowrap "+(a?"":"text-gray-400")} style={{color:a?S.textColor:undefined}}>{s.l}</span></div>);})}
+          </div>
+        </div>
+      );
+    };
+
+    const Counter=({label,value,onChange})=>(<div className="flex flex-col items-center p-3 sm:p-4 bg-gray-50 rounded-2xl border-2 border-transparent hover:border-gray-200 transition-all"><span className="text-xs sm:text-sm font-semibold text-gray-500 mb-2">{label}</span><div className="flex items-center gap-3 sm:gap-4"><button onClick={()=>onChange(Math.max(0,value-1))} className={"w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white flex items-center justify-center text-center hover:bg-gray-100 "+(S.showBorder?"shadow-sm":"border border-gray-200")}>-</button><span className="text-lg sm:text-xl font-bold w-6 text-center">{value}</span><button onClick={()=>onChange(value+1)} className={"w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white flex items-center justify-center text-center hover:bg-gray-100 "+(S.showBorder?"shadow-sm":"border border-gray-200")}>+</button></div></div>);
+    
+    const Toggle=({label,active,onClick,iconPath,color})=>(<button onClick={onClick} className={"py-3 sm:py-4 px-2 rounded-xl border-2 transition-all flex flex-col items-center justify-center gap-1.5 sm:gap-2 text-center w-full "+(active?("bg-white "+(S.showBorder?"shadow-md":"border-gray-200")):"bg-gray-50 border-transparent text-gray-400 hover:text-gray-500")} style={{borderColor:active?color:'transparent'}}><svg className="w-5 h-5 sm:w-6 sm:h-6 transition-colors" style={{color:active?color:undefined}} fill="none" stroke="currentColor" viewBox="0 0 24 24" dangerouslySetInnerHTML={{__html:iconPath}}/><span className="text-[10px] sm:text-[11px] font-bold" style={{color:active?S.textColor:undefined}}>{label}</span></button>);
+
+    // --- YELLOW EXPERT BANNER (Minimalistic Design) ---
+    const YellowBanner = ({ onClick }) => (
+      <div onClick={onClick} className="w-full rounded-xl p-3 mb-5 sm:mb-6 cursor-pointer transition-all flex items-center justify-between anim-pop-in bg-[#FFCC00] hover:bg-[#FACC15]">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-white/60 text-gray-900">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+          </div>
+          <div className="text-left">
+            <p className="font-black text-xs sm:text-sm m-0 leading-tight text-gray-900">Valoración profesional GRATIS</p>
+            <p className="text-[10px] sm:text-[11px] font-semibold m-0 mt-0.5 text-gray-800">Te llamamos en menos de 24h</p>
+          </div>
+        </div>
+        <div className="text-gray-900 pr-1">
+          <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
+        </div>
+      </div>
+    );
+
+    // --- IN-WIDGET OTP OVERLAY ---
+    const OtpOverlay = ({ phone, code, setCode, onVerify, loading, error, onBack }) => {
+      const [digits, setDigits] = useState(['', '', '', '', '', '']);
+      const inputRefs = useRef([]);
+
+      useEffect(() => {
+        if (code === '') setDigits(['','','','','','']);
+      }, [code]);
+
+      const handleChange = (index, value) => {
+        if (!/^\d*$/.test(value)) return;
+        const newDigits = [...digits];
+        newDigits[index] = value;
+        setDigits(newDigits);
+        setCode(newDigits.join(''));
+
+        if (value !== '' && index < 5) {
+          inputRefs.current[index + 1].focus();
+        }
+      };
+
+      const handleKeyDown = (index, e) => {
+        if (e.key === 'Backspace' && digits[index] === '' && index > 0) {
+          inputRefs.current[index - 1].focus();
+        }
+      };
+
+      const handlePaste = (e) => {
+        e.preventDefault();
+        const pastedData = e.clipboardData.getData('text/plain').replace(/\D/g, '').slice(0, 6);
+        if (!pastedData) return;
+        const newDigits = [...digits];
+        for (let i = 0; i < pastedData.length; i++) {
+          newDigits[i] = pastedData[i];
+        }
+        setDigits(newDigits);
+        setCode(newDigits.join(''));
+        if (pastedData.length < 6) {
+          inputRefs.current[pastedData.length].focus();
+        } else {
+          inputRefs.current[5].focus();
+        }
+      };
+
+      return (
+        <div className="absolute inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-white/95 backdrop-blur-md rounded-[2.5rem] anim-pop-in">
+          <div className="w-full max-w-sm text-center relative p-6">
+            <button onClick={onBack} className="absolute -top-4 right-0 text-gray-400 hover:text-gray-600 transition-colors">
+              <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 sm:mb-6" style={{backgroundColor: S.primaryColor + '15', color: S.primaryColor}}>
+              <svg width="28" height="28" className="sm:w-8 sm:h-8" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+            </div>
+            <h2 className="text-xl sm:text-2xl font-extrabold mb-2" style={{color:S.textColor}}>Verificación SMS</h2>
+            <p className="text-gray-500 text-xs sm:text-sm mb-6 leading-relaxed">Hemos enviado un código seguro al<br/><strong className="text-gray-800 tracking-wide">{phone}</strong></p>
+            
+            <div className="flex justify-center gap-1 sm:gap-2 mb-2">
+              {digits.map((digit, index) => (
+                <input
+                  key={index}
+                  ref={el => inputRefs.current[index] = el}
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={1}
+                  value={digit}
+                  onChange={e => handleChange(index, e.target.value)}
+                  onKeyDown={e => handleKeyDown(index, e)}
+                  onPaste={handlePaste}
+                  className="w-10 h-12 sm:w-12 sm:h-14 text-center text-xl sm:text-2xl font-black rounded-xl border-2 outline-none transition-colors shadow-sm bg-gray-50 focus:bg-white"
+                  style={{borderColor: digit ? S.primaryColor : '#e5e7eb', color: S.textColor}}
+                />
+              ))}
+            </div>
+
+            {error && <p className="text-red-500 text-xs font-bold mt-2 text-center">{error}</p>}
+            <button onClick={onVerify} disabled={loading || code.length !== 6} className="w-full py-3.5 sm:py-4 mt-6 rounded-xl font-bold transition-all shadow-md hover:opacity-90 disabled:opacity-50 text-base sm:text-lg" style={{backgroundColor: S.primaryColor, color: btnTextColor}}>
+              {loading ? 'Verificando...' : 'Confirmar Código'}
+            </button>
+            <button onClick={onBack} className="text-[11px] sm:text-xs font-bold text-gray-500 hover:text-gray-700 mt-5 underline transition-colors">Modificar número de teléfono</button>
+          </div>
+        </div>
+      );
+    };
+
+    // --- MAIN VALUATION FORM COMPONENT ---
+    const ValuationForm=()=>{
+      const[step,setStep]=useState(S.forceQuick ? 3 : 1);
+      const[fd,setFd]=useState({...INIT,idAgency:S.agencyId});
+      const[uiState,setUiState]=useState('idle'); 
+      const[estimatedValue,setEstimatedValue]=useState(null);
+      const[estimatedPriceM2,setEstimatedPriceM2]=useState(null);
+      const[basePriceM2,setBasePriceM2]=useState(null); 
+      const[progress,setProgress]=useState(0);
+      const[loadingMsg,setLoadingMsg]=useState('Inicializando...');
+      const[showMap,setShowMap]=useState(false); 
+      const[searchMode,setSearchMode]=useState('address'); 
+      const[catastroLoading,setCatastroLoading]=useState(false);
+      const[catastroError,setCatastroError]=useState('');
+      const[gpsLoading, setGpsLoading]=useState(false);
+      const[addressValidated, setAddressValidated]=useState(false);
+      const[manualError, setManualError]=useState('');
+      
+      const[isPisoPuertaOpen, setIsPisoPuertaOpen] = useState(false);
+
+      const[valuationIntent, setValuationIntent] = useState(''); 
+      const[isQuickPro, setIsQuickPro] = useState(S.forceQuick || false);
+
+      const[showOtp, setShowOtp] = useState(false);
+      const[otpCode, setOtpCode] = useState('');
+      const[otpError, setOtpError] = useState('');
+      const[otpLoading, setOtpLoading] = useState(false);
+
+      const[citySearch, setCitySearch] = useState('');
+      const[streetSearch, setStreetSearch] = useState('');
+      const[tempNum, setTempNum] = useState('');
+      const[sinNumero, setSinNumero] = useState(false);
+
+      // --- RECEIVE META TRACKING FROM PARENT PAGE (iframe bridge) ---
+      const trackingRef = useRef({});
+      useEffect(() => {
+        const handleTracking = (event) => {
+          if (!event.data || event.data.type !== 'sowper_tracking') return;
+          const t = event.data.payload || {};
+          const clean = {};
+          ['fbclid','fbp','fbc','utmSource','utmMedium','utmCampaign','utmContent','utmTerm'].forEach((k) => { if (t[k]) clean[k] = t[k]; });
+          if (Object.keys(clean).length === 0) return;
+          trackingRef.current = { ...trackingRef.current, ...clean };
+          setFd((prev) => ({ ...prev, ...clean }));
+        };
+        window.addEventListener('message', handleTracking);
+        try { window.top.postMessage({ type: 'sowper_request_tracking', agencyId: S.agencyId }, '*'); } catch(e) {}
+        return () => window.removeEventListener('message', handleTracking);
+      }, []);
+
+      const next=()=>setStep(s=>Math.min(s+1,4));
+      const prev=()=>setStep(s=>Math.max(s-1,1));
+      const upd=u=>setFd(p=>({...p,...u}));
+      
+      const formatCurrency=(val)=>{
+        if(!val) return "";
+        return new Intl.NumberFormat('es-ES',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(val);
+      };
+
+      const minVal = estimatedValue ? Math.round(estimatedValue * 0.85) : 0;
+      const maxVal = estimatedValue ? Math.round(estimatedValue * 1.15) : 0;
+
+      // Range limits for the Media Zona UI (10% variance)
+      const minMedia = basePriceM2 ? Math.round(basePriceM2 * 0.90) : 0;
+      const maxMedia = basePriceM2 ? Math.round(basePriceM2 * 1.10) : 0;
+
+      const isValidPhoneStrict = (phone, countryCode) => {
+          if(!phone) return false;
+          const config = COUNTRY_CONFIG[countryCode];
+          if(!config) return false;
+          if (phone.length < config.min || phone.length > config.max) return false;
+          if (countryCode === '+34') {
+              if(!/^[6789]/.test(phone)) return false;
+              if(phone === phone[0].repeat(9)) return false; 
+          }
+          return true;
+      };
+
+      const handlePhoneChange = (e) => {
+          const clean = e.target.value.replace(/\D/g, '');
+          const config = COUNTRY_CONFIG[fd.countryCode];
+          if (config && clean.length <= config.max) {
+              upd({ telefono: clean });
+          } else if (!config) {
+              upd({ telefono: clean }); 
+          }
+      };
+
+      useEffect(()=>{
+          let msgInterval, progInterval;
+          if(uiState === 'calculating'){
+              setProgress(0);
+              const messages = S.aiValuationActive ? AI_STEPS : ['Conectando de forma segura...','Enviando información...','Procesando solicitud...'];
+              let stepMsg = 0;
+              setLoadingMsg(messages[0]);
+              msgInterval = setInterval(() => {
+                  stepMsg++;
+                  if (stepMsg < messages.length) setLoadingMsg(messages[stepMsg]);
+              }, S.aiValuationActive ? 1800 : 800);
+              progInterval = setInterval(() => {
+                  setProgress(p => {
+                      if (p >= 100) return 100;
+                      const increment = S.aiValuationActive ? (Math.random() * 3 + 1) : (Math.random() * 15 + 10);
+                      const next = p + increment; 
+                      return next >= 92 ? 92 : next; 
+                  });
+              }, 300);
+          }
+          return () => { clearInterval(msgInterval); clearInterval(progInterval); };
+      }, [uiState, fd.ciudad]);
+
+      const useGPSLocation = () => {
+          if (!navigator.geolocation) { setManualError("Tu navegador no soporta geolocalización."); return; }
+          setGpsLoading(true); setManualError('');
+          navigator.geolocation.getCurrentPosition(
+              (position) => {
+                  const lat = position.coords.latitude; const lng = position.coords.longitude;
+                  const geocoder = new window.google.maps.Geocoder();
+                  geocoder.geocode({ location: { lat, lng } }, (results, status) => {
+                      setGpsLoading(false);
+                      if (status === 'OK' && results[0]) { parseAndSetAddress(results[0], lat, lng); } 
+                      else { setManualError("No pudimos obtener la dirección exacta. Introdúcela manualmente."); }
+                  });
+              },
+              (error) => { setGpsLoading(false); setManualError("Permiso de ubicación denegado."); },
+              { enableHighAccuracy: true }
+          );
+      };
+
+      const validateIdealistaAddress = () => {
+          if (!citySearch || !streetSearch || (!tempNum && !sinNumero)) {
+              setManualError(sinNumero ? "Por favor, rellena el municipio y la calle." : "Rellena todos los campos (Municipio, Calle y Nº).");
+              return;
+          }
+          setManualError(''); setGpsLoading(true);
+          const geocoder = new window.google.maps.Geocoder();
+          const addressQuery = (!sinNumero && tempNum) ? (streetSearch + " " + tempNum + ", " + citySearch + ", España") : (streetSearch + ", " + citySearch + ", España");
+          geocoder.geocode({ address: addressQuery }, (results, status) => {
+              setGpsLoading(false);
+              if (status === 'OK' && results[0]) {
+                  parseAndSetAddress(results[0], results[0].geometry.location.lat(), results[0].geometry.location.lng());
+              } else {
+                  upd({ calle: streetSearch, numero: sinNumero ? '' : tempNum, ciudad: citySearch, direccion: addressQuery, lat: 0, lng: 0 });
+                  setAddressValidated(true);
+              }
+          });
+      };
+
+      const parseAndSetAddress = (googleResult, lat, lng) => {
+          let street='', number='', city='', zip='', province='';
+          const c = googleResult.address_components || [];
+          const g = t => c.find(x => x.types.includes(t))?.long_name || '';
+          
+          street = g('route') || googleResult.name || streetSearch;
+          number = g('street_number') || tempNum;
+          city = g('locality') || g('postal_town') || citySearch;
+          zip = g('postal_code') || '';
+          province = g('administrative_area_level_2') || '';
+
+          let cityDisplay = city + (province && city.toLowerCase() !== province.toLowerCase() ? ', ' + province : '');
+          upd({ calle: street, numero: number, ciudad: city, codigoPostal: zip, provincia: province, direccion: googleResult.formatted_address, lat: lat, lng: lng });
+          setStreetSearch(street); setTempNum(number); setCitySearch(cityDisplay);
+          setAddressValidated(true); setSearchMode('address');
+      };
+
+      const normaliseStreet = (s) => {
+        if (!s) return '';
+        return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+          .toLowerCase().trim()
+          .replace(/^(carrer|calle|avenida|avinguda|paseo|passeig|plaza|placa|pla\u00e7a|ronda|camino|cami|cam\u00ed)\s+(de\s+|del\s+|dels\s+|de\s+la\s+|de\s+les\s+)?/i, '')
+          .replace(/[^a-z0-9]/g, '');
+      };
+
+      const handlePinMoved = (lat, lng) => {
+        upd({ lat, lng });
+        if (!window.google) return;
+        const geocoder = new window.google.maps.Geocoder();
+        geocoder.geocode({ location: { lat, lng } }, (results, status) => {
+          if (status !== 'OK' || !results[0]) return;
+          const c = results[0].address_components || [];
+          const g = t => c.find(x => x.types.includes(t))?.long_name || '';
+          const newZip = g('postal_code'); const newStreet = g('route'); const newNumber = g('street_number');
+          const updates = {};
+          if (newZip) updates.codigoPostal = newZip;
+          if (newStreet) { 
+            const currentNorm = normaliseStreet(streetSearch);
+            const newNorm = normaliseStreet(newStreet);
+            if (newNorm && currentNorm !== newNorm) {
+              updates.calle = newStreet; 
+              setStreetSearch(newStreet); 
+            }
+          }
+          if (newNumber) updates.numero = newNumber;
+          if (Object.keys(updates).length > 0) upd(updates);
+        });
+      };
+
+      const searchCatastro = async () => {
+         setCatastroLoading(true); setCatastroError(''); setAddressValidated(false);
+         try {
+            const res = await fetch(WEBHOOK_URL, { method: 'POST', body: JSON.stringify({ action: 'catastro', rc: fd.referenciaCatastral }) });
+            const data = await res.json();
+            if (data.error || data.status === "error") { setCatastroError("Catastro: " + (data.error || data.message || "Referencia no encontrada.")); } 
+            else {
+               const fullCalle = toTitleCase(data.calleCompleta || data.calle || "");
+               const calleSolo = toTitleCase(data.calle || "");
+               const muni = toTitleCase(data.municipio || "");
+               const prov = toTitleCase(data.provincia || "");
+               const sup = data.superficie || 90;
+               const geocoder = new window.google.maps.Geocoder();
+               const addressQuery = fullCalle + ", " + muni + ", " + prov + ", España";
+               geocoder.geocode({ address: addressQuery }, (results, status) => {
+                   let lat = 0, lng = 0; let formatted = addressQuery;
+                   if (status === 'OK' && results[0]) {
+                       lat = results[0].geometry.location.lat(); lng = results[0].geometry.location.lng(); formatted = results[0].formatted_address;
+                   }
+                   upd({ calle: calleSolo, numero: data.numero || '', piso: data.piso || '', puerta: data.puerta || '', ciudad: muni, provincia: prov, direccion: formatted, superficieConstruida: sup, lat: lat, lng: lng });
+                   
+                   // Si Catastro devuelve piso o puerta, abrimos el desplegable automáticamente
+                   if (data.piso || data.puerta) {
+                       setIsPisoPuertaOpen(true);
+                   }
+                   
+                   setAddressValidated(true);
+               });
+            }
+         } catch (err) { setCatastroError("Error de conexión. Intenta de nuevo."); }
+         setCatastroLoading(false);
+      };
+
+      const triggerOtp = async () => {
+        setShowOtp(true);
+        setOtpLoading(true); setOtpError(''); setOtpCode('');
+        try {
+          const fullPhone = fd.countryCode + fd.telefono;
+          const res = await fetch(WEBHOOK_URL, { method: 'POST', body: JSON.stringify({ action: 'send_otp', phone: fullPhone }) });
+          const data = await res.json();
+          if (data.status !== "pending" && !data.sid) { setOtpError('No se pudo enviar el SMS. Verifica el número.'); }
+        } catch (e) { setOtpError('Error de conexión.'); }
+        setOtpLoading(false);
+      };
+
+      const verifyOtpAndSubmit = async () => {
+        setOtpLoading(true); setOtpError('');
+        try {
+          const fullPhone = fd.countryCode + fd.telefono;
+          const res = await fetch(WEBHOOK_URL, { method: 'POST', body: JSON.stringify({ action: 'verify_otp', phone: fullPhone, code: otpCode }) });
+          const data = await res.json();
+          if (data.status === "approved") {
+             setShowOtp(false);
+             if (isQuickPro) {
+                 submitFinalData('QUICK_PRO');
+             } else {
+                 setStep(4);
+             }
+          } else {
+             setOtpError('Código incorrecto. Inténtalo de nuevo.');
+          }
+        } catch (e) { setOtpError('Error de validación de código.'); }
+        setOtpLoading(false);
+      };
+
+      const submitFinalData = async (intentArg) => {
+        const finalIntent = intentArg || valuationIntent;
+        const isQuick = finalIntent === 'QUICK_PRO';
+        
+        if (finalIntent === 'PRO' || finalIntent === 'QUICK_PRO') {
+            setUiState('submitting_pro');
+        } else {
+            setUiState('calculating');
+        }
+        
+        const startTime = Date.now();
+        try{
+          const finalAddress = [fd.calle || fd.direccion.split(',')[0], fd.numero, fd.piso ? "Piso " + fd.piso : "", fd.puerta ? "Pta " + fd.puerta : ""].filter(Boolean).join(", ");
+          const fullPhone = fd.countryCode + " " + fd.telefono;
+          
+          const response = await fetch(WEBHOOK_URL,{
+              method:'POST',
+              body:JSON.stringify({
+                  "hp": fd.honeypot, 
+                  "ID Agency":fd.idAgency, 
+                  "Fecha":new Date().toISOString(),
+                  "Referencia catastral": isQuick ? "" : fd.referenciaCatastral, 
+                  "Dirección": finalAddress,
+                  "Ciudad":fd.ciudad, 
+                  "Provincia":fd.provincia, 
+                  "Código postal": fd.codigoPostal,
+                  "Superficie construida": isQuick ? "" : fd.superficieConstruida, 
+                  "Tipo de vivienda": isQuick ? "" : (fd.tipoVivienda || TIPOS[0] || "Piso o Apartamento"),
+                  "Garaje": isQuick ? "" : (fd.garaje?"Sí":"No"), 
+                  "Ascensor": isQuick ? "" : (fd.ascensor?"Sí":"No"), 
+                  "Trastero": isQuick ? "" : (fd.trastero?"Sí":"No"), 
+                  "Piscina": isQuick ? "" : (fd.piscina?"Sí":"No"),
+                  "Número de habitaciones": isQuick ? "" : fd.habitaciones, 
+                  "Número de baños": isQuick ? "" : fd.banos,
+                  "¿Es usted el propietario?":fd.esPropietario?"Sí":"No", 
+                  "Motivo de la valoración":fd.motivoValoracion,
+                  "Plazo ideal para una posible venta": isQuick ? "" : fd.plazoVenta, 
+                  "Nombre completo":fd.nombreCompleto,
+                  "Email":fd.email, 
+                  "Teléfono":fd.telefono?fullPhone:"", 
+                  "Consentimiento":fd.consentimiento?"Aceptado":"Denegado",
+                  "fbclid": fd.fbclid,
+                  "fbp": fd.fbp,
+                  "fbc": fd.fbc,
+                  "utm_source": fd.utmSource,
+                  "utm_medium": fd.utmMedium,
+                  "utm_campaign": fd.utmCampaign,
+                  "utm_content": fd.utmContent,
+                  "utm_term": fd.utmTerm,
+                  "Intent": finalIntent
+              })
+          });
+          const data = await response.json();
+          const elapsed = Date.now() - startTime;
+          
+          if (!S.aiValuationActive || finalIntent === 'PRO' || finalIntent === 'QUICK_PRO') {
+              if (elapsed < 1500) await new Promise(resolve => setTimeout(resolve, 1500 - elapsed));
+              setUiState('success_no_ai');
+              window.top.postMessage({ event: 'sowper_lead_conversion', agencyId: S.agencyId, leadType: finalIntent, reason: fd.motivoValoracion, timeframe: fd.plazoVenta }, '*');
+              return;
+          }
+
+          const randomDelay = Math.floor(Math.random() * (10000 - 8000 + 1)) + 8000;
+          if (elapsed < randomDelay) await new Promise(resolve => setTimeout(resolve, randomDelay - elapsed));
+          
+          setProgress(100); setLoadingMsg('¡Completado!');
+          setTimeout(() => {
+              if (data && data.status === "success") {
+                  setEstimatedValue(data.estimatedValue); setEstimatedPriceM2(data.estimatedPriceM2); setBasePriceM2(data.basePriceM2); 
+                  setUiState('success');
+                  window.top.postMessage({ event: 'sowper_lead_conversion', agencyId: S.agencyId, leadType: finalIntent, reason: fd.motivoValoracion, timeframe: fd.plazoVenta }, '*');
+              } else { setUiState('no_data'); }
+          }, 600);
+        } catch(e) {
+          setProgress(100); setLoadingMsg('Terminando...');
+          setTimeout(() => setUiState('no_data'), 600);
+        }
+      };
+
+      const resetFlow = () => {
+         setUiState('idle'); setStep(1); setFd({...INIT,idAgency:S.agencyId, ...trackingRef.current}); setShowMap(false); setAddressValidated(false); setCitySearch('');
+         setStreetSearch(''); setTempNum(''); setSinNumero(false); setManualError(''); setValuationIntent(''); setIsQuickPro(S.forceQuick || false); setShowOtp(false); setOtpCode(''); setOtpError(''); setIsPisoPuertaOpen(false);
+         if(S.forceQuick) setStep(3);
+      };
+
+      const isShortMode = S.forceQuick || isQuickPro;
+
+      return(
+        <div className="flex-1 flex flex-col items-center justify-center p-4 md:p-8">
+
+          {/* MAIN CONTAINER WITH overflow-hidden */}
+          <div className={"w-full max-w-4xl relative mx-auto transition-all duration-300 my-4 sm:my-8 " + (S.forceQuick ? "bg-white rounded-[2rem] p-4 sm:p-6" : (S.showBorder ? "bg-white rounded-[2.5rem] shadow-2xl pb-10 overflow-hidden" : "bg-transparent overflow-hidden"))}>
+            
+            {uiState === 'idle' && !S.forceQuick && (
+              <div className="pt-8 pb-4 relative z-20 px-8 sm:px-10 md:px-16 w-full mx-auto">
+                  <StepBar step={step} color={S.primaryColor}/>
+              </div>
+            )}
+
+            <div className="px-4 sm:px-6 md:px-12 w-full">
+
+              {uiState === 'submitting_pro' && (
+                <div className="py-20 text-center anim-slide-up w-full max-w-2xl mx-auto">
+                    <svg className="w-14 h-14 animate-spin mx-auto mb-6" style={{color: S.primaryColor}} viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeDasharray="16 16" strokeLinecap="round"></circle></svg>
+                    <h2 className="text-xl sm:text-2xl font-extrabold text-gray-900">Enviando solicitud...</h2>
+                    <p className="text-sm sm:text-base text-gray-500 mt-2 font-medium">Conectando con un experto en tu zona</p>
+                </div>
+              )}
+              
+              {uiState === 'calculating' && (
+                <div className="py-8 sm:py-12 flex flex-col items-center justify-center anim-slide-up w-full max-w-sm mx-auto">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 mb-8 rounded-full border" style={{backgroundColor: S.primaryColor+'15', borderColor: S.primaryColor+'30'}}>
+                      <svg className="w-3.5 h-3.5 animate-pulse" style={{color: S.primaryColor}} viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L14.09 8.26L20 9.27L15.55 13.97L16.91 20L12 16.9L7.09 20L8.45 13.97L4 9.27L9.91 8.26L12 2Z"/></svg>
+                      <span className="text-[11px] font-bold uppercase tracking-wider" style={{color: S.primaryColor}}>AI Análisis</span>
+                  </div>
+                  <div className="relative w-44 h-44 flex items-center justify-center mb-8">
+                    <svg viewBox="0 0 100 100" className="w-full h-full overflow-visible">
+                      <defs>
+                        <path id="roundedHousePath" d="M 22,92 L 78,92 Q 81,92 81,89 L 81,53 Q 81,51 83,51 L 93.5,51 Q 95,51 93.5,49.5 L 51.5,13 Q 50,11.5 48.5,13 L 28,30.5 L 28,22 Q 28,20 26,20 L 18,20 Q 16,20 16,22 L 16,41 L 6.5,49.5 Q 5,51 6.5,51 L 20,51 L 20,89 Q 20,92 22,92 Z" />
+                        <clipPath id="houseClip"><use href="#roundedHousePath" /></clipPath>
+                        <path id="waveShape" d="M 0 50 Q 15 35, 30 50 T 60 50 T 90 50 T 120 50 T 150 50 T 180 50 T 210 50 L 210 200 L 0 200 Z" />
+                      </defs>
+                      <use href="#roundedHousePath" fill="#f8fafc" stroke="#e2e8f0" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
+                      <g clipPath="url(#houseClip)">
+                        <g className="liquid-fill-container" style={{ transform: 'translateY(' + (100 - progress) + '%)' }}>
+                          <use href="#waveShape" className="wave-back" fill={S.primaryColor} y="-48" x="0" />
+                          <use href="#waveShape" className="wave-front" fill={S.primaryColor} y="-44" x="0" />
+                        </g>
+                      </g>
+                      <use href="#roundedHousePath" fill="none" stroke="#e2e8f0" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
+                    </svg>
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none mt-4 transition-colors duration-200">
+                      <span className="text-4xl font-black tracking-tighter drop-shadow-[0_1px_2px_rgba(255,255,255,0.8)]" style={{color: S.primaryColor}}>{Math.floor(progress)}%</span>
+                    </div>
+                  </div>
+                  <div className="border-t border-gray-200 pt-6 w-full">
+                     <div className="space-y-4">
+                      {(S.aiValuationActive ? AI_STEPS : [loadingMsg]).map((text, index) => {
+                        const isDone = S.aiValuationActive ? (index < Math.min(Math.floor(progress / 25), 3)) : false;
+                        const isActive = S.aiValuationActive ? (index === Math.min(Math.floor(progress / 25), 3)) : true;
+                        const isPending = S.aiValuationActive ? (index > Math.min(Math.floor(progress / 25), 3)) : false;
+                        return (
+                          <div key={index} className="flex items-center gap-3 transition-opacity duration-300" style={{ opacity: isPending ? 0.3 : 1 }}>
+                            <div className="shrink-0 w-5 h-5 flex items-center justify-center">
+                              {isDone ? (<svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24" style={{ color: S.primaryColor }}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>) 
+                              : isActive ? (<svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" style={{ color: S.primaryColor }}><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeDasharray="16 16" strokeLinecap="round"></circle></svg>) 
+                              : (<div className="w-1.5 h-1.5 rounded-full bg-gray-400"></div>)}
+                            </div>
+                            <span className={"text-[13px] font-bold leading-tight " + (isActive ? "shimmer-text text-gray-900" : isDone ? "text-gray-900" : "text-gray-500")}>{text}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {uiState === 'no_data' && (
+                <div className="py-10 text-center anim-slide-up max-w-2xl mx-auto">
+                  <div className="w-16 h-16 rounded-2xl border-2 flex items-center justify-center mx-auto mb-6" style={{borderColor: S.primaryColor, color: S.primaryColor}}><svg width="32" height="32" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg></div>
+                  <h2 className="text-2xl font-extrabold mb-6 tracking-tight" style={{color:S.textColor}}>Petición Recibida</h2>
+                  <div className="bg-gray-50 p-5 rounded-2xl mb-8 border border-gray-100 text-left"><p className="text-gray-600 text-sm leading-relaxed">Nuestra Inteligencia Artificial no dispone de suficientes datos históricos en tu zona exacta para generar una estimación automática precisa en este momento.<br/><br/><strong>¡Pero no te preocupes!</strong> Hemos recibido los datos de tu inmueble. Un agente experto en la zona te contactará muy pronto con un estudio de mercado 100% personalizado.</p></div>
+                  <button onClick={resetFlow} className="w-full py-4 px-6 rounded-xl font-bold text-center transition-all hover:opacity-90" style={{backgroundColor:S.primaryColor,color:'#fff'}}>Finalizar y volver al inicio</button>
+                </div>
+              )}
+
+              {uiState === 'success_no_ai' && (
+                <div className="py-10 text-center anim-slide-up max-w-2xl mx-auto">
+                  <div className="w-16 h-16 rounded-2xl border-2 flex items-center justify-center mx-auto mb-6" style={{borderColor: S.primaryColor, color: S.primaryColor}}><svg width="32" height="32" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg></div>
+                  <h2 className="text-2xl font-extrabold mb-6 tracking-tight" style={{color:S.textColor}}>¡Petición Recibida!</h2>
+                  <div className="bg-gray-50 p-5 rounded-2xl mb-8 border border-gray-100 text-left"><p className="text-gray-600 text-sm leading-relaxed">Hemos recibido los datos de tu inmueble correctamente. Un experto en tu zona analizará las características y se pondrá en contacto contigo muy pronto para ofrecerte un estudio de mercado 100% personalizado y preciso.</p></div>
+                  <button onClick={resetFlow} className="w-full py-4 px-6 rounded-xl font-bold text-center transition-all hover:opacity-90" style={{backgroundColor:S.primaryColor,color:'#fff'}}>Finalizar y volver al inicio</button>
+                </div>
+              )}
+
+              {uiState === 'success' && (
+                <div className="py-8 anim-slide-up max-w-2xl mx-auto">
+                  <div className="flex items-start gap-4 sm:gap-5 mb-8 text-left">
+                    <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl border-2 flex items-center justify-center shrink-0" style={{ borderColor: S.primaryColor, color: S.primaryColor }}>
+                      <svg width="24" height="24" className="sm:w-[28px] sm:h-[28px]" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>
+                    </div>
+                    <div>
+                      <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight mb-2" style={{ color: S.textColor }}>{S.texts.successTitle}</h2>
+                      <p className="text-gray-500 font-medium text-sm sm:text-base leading-relaxed">{S.texts.successMessage}</p>
+                    </div>
+                  </div>
+                  <div className="rounded-2xl border border-gray-200 overflow-hidden mb-8 w-full">
+                    <div className="py-8 px-4 sm:p-10 text-center w-full relative" style={{ backgroundColor: S.primaryColor }}>
+                      <span className="text-[11px] font-bold uppercase tracking-widest text-white/80 mb-3 block mt-2">Rango de Valor Estimado</span>
+                      <div className="flex flex-wrap items-center justify-center whitespace-normal sm:whitespace-nowrap text-2xl sm:text-4xl md:text-5xl font-black tracking-tighter mb-3 w-full text-white">
+                        <span>{formatCurrency(minVal)}</span><span className="text-white/50 font-medium mx-1 sm:mx-2">-</span><span>{formatCurrency(maxVal)}</span>
+                      </div>
+                      <span className="text-xs font-semibold text-white/80 block">Media de {formatCurrency(estimatedPriceM2)}/m² para este inmueble</span>
+                    </div>
+                    <div className="grid grid-cols-2 border-t border-gray-200 bg-white">
+                      <div className="p-4 sm:p-5 text-center border-r border-gray-200">
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 block mb-1">Media Zona</span>
+                        <span className="text-xs sm:text-base font-extrabold" style={{ color: S.textColor }}>
+                          {formatCurrency(minMedia)} - {formatCurrency(maxMedia)}
+                          <span className="text-[9px] sm:text-xs text-gray-400 ml-0.5 font-medium block sm:inline">/m²</span>
+                        </span>
+                      </div>
+                      <div className="p-4 sm:p-5 text-center flex flex-col justify-center">
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 block mb-1">Superficie Total</span>
+                        <span className="text-xs sm:text-base font-extrabold" style={{ color: S.textColor }}>{fd.superficieConstruida} <span className="text-[9px] sm:text-xs text-gray-400 ml-0.5 font-medium">m²</span></span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="mb-8 text-left">
+                    <div className="mb-5 flex flex-col gap-3">
+                      <div className="flex justify-between items-start gap-4">
+                        <div>
+                          <span className="text-sm font-bold text-gray-900 leading-tight block">
+                            {[fd.calle || fd.direccion.split(',')[0], fd.numero, fd.piso ? "Piso "+fd.piso : "", fd.puerta ? "Pta "+fd.puerta : ""].filter(Boolean).join(", ")}
+                            {fd.codigoPostal ? ' ('+fd.codigoPostal+')' : ''}
+                          </span>
+                          <span className="text-xs text-gray-500 font-medium mt-0.5 block">{fd.ciudad} {fd.provincia && fd.provincia !== fd.ciudad ? '('+fd.provincia+')' : ''}</span>
+                        </div>
+                        <button onClick={() => setShowMap(!showMap)} className="text-xs font-bold hover:underline whitespace-nowrap" style={{ color: S.primaryColor }}>{showMap ? 'Ocultar mapa' : 'Ver mapa'}</button>
+                      </div>
+                      {showMap && (
+                        <div className="relative w-full h-44 rounded-xl border border-gray-200 bg-gray-100 overflow-hidden anim-expand">
+                          <iframe src={getSecureMapUrl(fd.lat && fd.lng ? (fd.lat + "," + fd.lng) : (fd.calle || fd.direccion + ", " + fd.ciudad))} className="absolute top-[-50px] left-0 w-full h-[calc(100%+100px)] border-0 pointer-events-none" style={{ filter: 'grayscale(100%) opacity(0.8) contrast(1.2)' }} loading="lazy"></iframe>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-2 items-center">
+                      <div className="bg-gray-100 rounded-lg px-3 py-1.5 text-[11px] font-bold text-gray-700">{fd.tipoVivienda}</div>
+                      <div className="bg-gray-100 rounded-lg px-3 py-1.5 text-[11px] font-bold text-gray-700 flex items-center gap-1.5"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" style={{color:S.primaryColor}} dangerouslySetInnerHTML={{__html: ICONS.bed}} /> {fd.habitaciones}</div>
+                      <div className="bg-gray-100 rounded-lg px-3 py-1.5 text-[11px] font-bold text-gray-700 flex items-center gap-1.5"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" style={{color:S.primaryColor}} dangerouslySetInnerHTML={{__html: ICONS.bath}} /> {fd.banos}</div>
+                      {(fd.ascensor || fd.garaje || fd.trastero || fd.piscina) && <div className="w-px h-5 bg-gray-200 mx-1"></div>}
+                      {fd.ascensor && <div className="bg-gray-100 rounded-lg w-8 h-8 flex items-center justify-center"><svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{color:S.primaryColor}} dangerouslySetInnerHTML={{__html: ICONS.elevator}} /></div>}
+                      {fd.garaje && <div className="bg-gray-100 rounded-lg w-8 h-8 flex items-center justify-center"><svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{color:S.primaryColor}} dangerouslySetInnerHTML={{__html: ICONS.garage}} /></div>}
+                    </div>
+                  </div>
+                  
+                  {/* WARNING BOX FOR AI */}
+                  <div className="border border-[#FFCC00] bg-[#FFFCF0] shadow-sm rounded-2xl p-5 sm:p-6 mb-8 relative">
+                    <div className="flex items-start gap-4 mb-4">
+                      <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 font-black text-xl bg-[#FFCC00] text-gray-900">!</div>
+                      <div>
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
+                          <h4 className="font-extrabold text-gray-900 text-sm">ESTA ES UNA VALORACIÓN ORIENTATIVA</h4>
+                          <span className="text-[10px] font-black px-2 py-0.5 rounded-full uppercase bg-[#FFCC00] text-gray-900">POCO PRECISA</span>
+                        </div>
+                        <p className="text-xs text-gray-600 leading-relaxed">Debido a las características de esta propiedad, la estimación generada por IA puede no reflejar su valor real en el mercado actual.</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3 sm:gap-4 mb-5 sm:mb-6 pt-4 border-t border-amber-200">
+                      <div className="mt-1 text-amber-500 shrink-0"><svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 001 1m-6 0h6"/></svg></div>
+                      <p className="text-xs text-gray-600 leading-relaxed">Para obtener el valor real de mercado es imprescindible realizar <strong className="uppercase text-gray-900 text-[13px]">una valoración presencial GRATIS</strong> por parte de un experto técnico. Así obtendrás una tasación precisa y ajustada a la realidad.</p>
+                    </div>
+                    <button onClick={() => setUiState('success_no_ai')} className="w-full py-3.5 sm:py-4 font-black text-sm sm:text-base rounded-xl transition-all shadow-sm opacity-90 hover:opacity-100 bg-[#FFCC00] text-gray-900">Quiero mi valoración profesional GRATUITA</button>
+                  </div>
+
+                  <button onClick={resetFlow} className={"w-full py-3.5 sm:py-4 px-6 rounded-xl font-bold text-base sm:text-lg text-center transition-colors hover:opacity-90"} style={{backgroundColor:S.primaryColor,color:btnTextColor}}>Finalizar y volver al inicio</button>
+                </div>
+              )}
+
+              {/* STEP 1: INITIAL LOCATION SEARCH */}
+              {uiState === 'idle' && step === 1 && (
+                <div className="space-y-6 mt-6 sm:mt-8 anim-slide-up max-w-2xl mx-auto">
+                  
+                  {/* TITLE HIDES IF ADDRESS VALIDATED */}
+                  {!addressValidated && (
+                    <div className="text-center mb-6 sm:mb-8">
+                      <h1 className="text-2xl sm:text-3xl font-extrabold mb-2 tracking-tight" style={{color:S.textColor}}>{S.texts.mainTitle}</h1>
+                      <p className="text-sm sm:text-base text-gray-500">{S.texts.mainSubtitle}</p>
+                    </div>
+                  )}
+                  
+                  {/* YELLOW BANNER ONLY SHOWS ON MAP SCREEN IN STEP 1 */}
+                  {addressValidated && (
+                    <YellowBanner onClick={() => { setIsQuickPro(true); setStep(3); }} /> 
+                  )}
+                  
+                  {!addressValidated ? (
+                     <div className="space-y-6">
+                        <div className="flex bg-gray-100 p-1.5 rounded-2xl">
+                          <button onClick={()=>{setSearchMode('address'); setManualError('');}} className={"flex-1 py-2.5 text-[11px] sm:text-[12px] font-bold rounded-xl transition-all " + (searchMode==='address' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700')}>Por Dirección</button>
+                          <button onClick={()=>{setSearchMode('catastro'); setCatastroError('');}} className={"flex-1 py-2.5 text-[11px] sm:text-[12px] font-bold rounded-xl transition-all " + (searchMode==='catastro' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700')}>Por Ref. Catastral</button>
+                        </div>
+                        {searchMode === 'address' && (
+                            <div className="anim-pop-in mt-4 space-y-4">
+                                <div className="relative">
+                                    <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">Municipio o Código Postal</label>
+                                    <div className="relative">
+                                        <input type="text" value={citySearch} onChange={(e) => { setCitySearch(e.target.value); setManualError(''); }} placeholder="Ej. Madrid, Valencia o 28001" className="w-full pl-4 sm:pl-5 pr-12 sm:pr-14 py-3.5 sm:py-4 bg-gray-50 border border-gray-200 rounded-2xl text-base text-gray-700 focus:outline-none focus:bg-white focus:border-blue-500 transition-all"/>
+                                        <button onClick={useGPSLocation} disabled={gpsLoading} title="Usar mi ubicación actual" className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center rounded-xl bg-white shadow-sm border border-gray-200 text-blue-600 hover:bg-blue-50 hover:border-blue-300 transition-all disabled:opacity-50">
+                                            {gpsLoading ? (<svg className="w-5 h-5 animate-spin text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10" strokeWidth="3" strokeDasharray="16 16" strokeLinecap="round"></circle></svg>) : (<svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" dangerouslySetInnerHTML={{__html: ICONS.gps}} />)}
+                                        </button>
+                                    </div>
+                                </div>
+                                <div className="flex flex-row gap-2 sm:gap-3 anim-pop-in mt-4">
+                                    <div className="relative flex-1">
+                                        <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">Calle o Vía</label>
+                                        <input type="text" value={streetSearch} onChange={(e) => { setStreetSearch(e.target.value); setManualError(''); }} placeholder="Ej. Calle Mayor..." className="w-full px-4 sm:px-5 py-3.5 sm:py-4 bg-gray-50 border border-gray-200 rounded-2xl text-base text-gray-700 focus:outline-none focus:bg-white focus:border-blue-500 transition-all"/>
+                                    </div>
+                                    <div className="w-1/3 max-w-[100px] sm:max-w-none">
+                                        <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">Nº</label>
+                                        <input type="text" value={sinNumero ? '' : tempNum} onChange={e => { setTempNum(e.target.value); setManualError(''); }} disabled={sinNumero} placeholder={sinNumero ? '—' : 'Ej. 12'} className={"w-full px-4 sm:px-5 py-3.5 sm:py-4 bg-gray-50 border border-gray-200 rounded-2xl text-base text-gray-700 focus:outline-none focus:bg-white focus:border-blue-500 transition-all " + (sinNumero ? "opacity-40 cursor-not-allowed" : "")}/>
+                                    </div>
+                                </div>
+                                <label className="flex items-center gap-2.5 cursor-pointer group anim-pop-in mt-4">
+                                    <input type="checkbox" checked={sinNumero} onChange={e => { setSinNumero(e.target.checked); if (e.target.checked) setTempNum(''); setManualError(''); }} className="w-4 h-4 rounded border-gray-300 cursor-pointer" style={{accentColor: S.primaryColor}}/>
+                                    <span className="text-[11px] sm:text-[12px] font-semibold text-gray-500 group-hover:text-gray-700 transition-colors">La dirección no tiene número</span>
+                                </label>
+                                {manualError && <p className="text-[11px] sm:text-[12px] text-red-500 font-bold mt-2 pl-2">{manualError}</p>}
+                                <div className="anim-pop-in pt-2 mt-4">
+                                    <button onClick={validateIdealistaAddress} disabled={gpsLoading || !citySearch || !streetSearch || (!tempNum && !sinNumero)} className={"w-full py-3.5 sm:py-4 font-bold rounded-2xl text-base sm:text-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed " + (S.showBorder ? "shadow-md hover:shadow-lg" : "")} style={{backgroundColor: S.primaryColor, color: btnTextColor}}>{gpsLoading ? 'Ubicando...' : 'Validar Dirección'}</button>
+                                </div>
+                            </div>
+                        )}
+                        {searchMode === 'catastro' && (
+                            <div className="anim-pop-in mt-4 space-y-4">
+                                <div>
+                                    <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">Referencia Catastral (20 dígitos)</label>
+                                    <div className="relative mb-1 flex items-center">
+                                       <input type="text" disabled={catastroLoading} value={fd.referenciaCatastral} onChange={e=>{upd({referenciaCatastral:e.target.value.toUpperCase().replace(/\s/g, '')}); setCatastroError('');}} maxLength="20" placeholder="Ej. 9872023VH5797S0001WX" className={"w-full px-4 sm:px-5 py-3.5 sm:py-4 bg-gray-50 border border-gray-200 rounded-2xl text-base text-gray-700 focus:outline-none focus:bg-white transition-all " + (catastroError ? "border-red-300 focus:border-red-500 bg-red-50" : "focus:border-blue-500")} onFocus={e=>!catastroError&&(e.currentTarget.style.borderColor=S.primaryColor)} onBlur={e=>!catastroError&&(e.currentTarget.style.borderColor='#e5e7eb')}/>
+                                    </div>
+                                    {catastroError && <p className="text-[11px] text-red-500 font-bold mt-2 text-left pl-2">{catastroError}</p>}
+                                    <p className="text-[10px] sm:text-[11px] text-gray-500 mt-2 px-2">Autocompletará la dirección y los <strong>metros cuadrados oficiales</strong>.</p>
+                                </div>
+                                <div className="anim-pop-in pt-2 mt-4">
+                                    <button onClick={searchCatastro} disabled={catastroLoading || fd.referenciaCatastral.length < 14} className={"w-full py-3.5 sm:py-4 font-bold rounded-2xl text-base sm:text-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed " + (S.showBorder ? "shadow-md hover:shadow-lg" : "")} style={{backgroundColor: S.primaryColor, color: btnTextColor}}>{catastroLoading ? 'Buscando en Catastro...' : 'Validar Referencia'}</button>
+                                </div>
+                            </div>
+                        )}
+                     </div>
+                  ) : (
+                     <div className="p-4 sm:p-5 bg-gray-50 border border-gray-200 rounded-2xl anim-pop-in">
+                        <div className="flex items-start gap-3 mb-4">
+                            <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center shrink-0">
+                                <svg className="w-6 h-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>
+                            </div>
+                            <div>
+                                <p className="text-[13px] sm:text-[14px] text-gray-900 font-extrabold mb-1">Ubicación verificada</p>
+                                {fd.referenciaCatastral && <p className="text-[11px] sm:text-[12px] text-gray-600 leading-relaxed mb-0.5"><strong className="text-gray-800">Ref:</strong> {fd.referenciaCatastral}</p>}
+                                <p className="text-[11px] sm:text-[12px] text-gray-600 leading-relaxed"><strong className="text-gray-800">Dirección:</strong> {fd.calle} {fd.numero}, {fd.ciudad} {fd.provincia ? '('+fd.provincia+')' : ''}</p>
+                            </div>
+                        </div>
+                        <DraggableMap fd={fd} onPinMoved={handlePinMoved} />
+                        
+                        {/* COLLAPSIBLE PISO/PUERTA */}
+                        <div className="mt-4 pt-3 border-t border-gray-200">
+                          <button onClick={() => setIsPisoPuertaOpen(!isPisoPuertaOpen)} className="w-full flex items-center justify-between text-[12px] font-bold text-gray-500 hover:text-gray-800 transition-colors py-2 px-1">
+                             <span>{isPisoPuertaOpen ? "− Ocultar piso y puerta" : "+ Añadir piso y puerta (Opcional)"}</span>
+                             <svg className={"w-4 h-4 transition-transform duration-300 " + (isPisoPuertaOpen ? "rotate-180" : "")} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" /></svg>
+                          </button>
+                          
+                          {isPisoPuertaOpen && (
+                             <div className="grid grid-cols-2 gap-3 anim-pop-in mt-2 pb-2">
+                               <div>
+                                 <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Piso</label>
+                                 <input type="text" value={fd.piso} onChange={e=>upd({piso:e.target.value})} className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg focus:border-blue-500 transition-all outline-none text-gray-700 text-base" placeholder="Ej: 3"/>
+                               </div>
+                               <div>
+                                 <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Puerta</label>
+                                 <input type="text" value={fd.puerta} onChange={e=>upd({puerta:e.target.value})} className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg focus:border-blue-500 transition-all outline-none text-gray-700 text-base" placeholder="Ej: B"/>
+                               </div>
+                             </div>
+                          )}
+                        </div>
+                     </div>
+                  )}
+                  {addressValidated && (
+                    <div className="flex gap-2 sm:gap-4 pt-2 mt-2">
+                      <button onClick={()=>setAddressValidated(false)} className="flex-1 py-3 sm:py-4 border-2 border-gray-200 rounded-2xl font-bold text-center text-gray-500 hover:bg-gray-50 transition-all text-sm sm:text-base">Modificar dirección</button>
+                      <button onClick={next} className={"flex-[2] py-3 sm:py-4 rounded-2xl font-bold text-center transition-all text-base sm:text-lg "+(S.showBorder?"shadow-md sm:shadow-lg":"")} style={{backgroundColor:S.primaryColor,color:btnTextColor}}>Siguiente paso</button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* STEP 2: COMBINED PROPERTY DETAILS AND EXTRAS */}
+              {uiState === 'idle' && step === 2 && (
+                <div className="space-y-6 mt-6 sm:mt-8 anim-slide-up max-w-2xl mx-auto">
+                  <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight" style={{color:S.textColor}}>{S.texts.step2Title}</h2>
+                  
+                  {/* YELLOW BANNER IN STEP 2 */}
+                  {!isQuickPro && (
+                      <YellowBanner onClick={() => { setIsQuickPro(true); setStep(3); }} />
+                  )}
+
+                  {fd.referenciaCatastral && fd.superficieConstruida !== 90 && (
+                      <div className="bg-green-50 border border-green-200 p-3 rounded-xl flex items-start gap-2">
+                          <svg className="w-5 h-5 text-green-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                          <p className="text-[11px] sm:text-xs text-green-800 font-medium leading-tight">¡Superficie extraída automáticamente de los datos oficiales del Catastro!</p>
+                      </div>
+                  )}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
+                    <div><label className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">Superficie (m²)</label><input type="number" value={fd.superficieConstruida} onChange={e=>upd({superficieConstruida:parseInt(e.target.value)})} className="w-full px-4 sm:px-5 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl outline-none focus:bg-white focus:border-blue-500 text-gray-700 transition-colors text-base"/></div>
+                    <div><label className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">Tipo de vivienda</label><select value={fd.tipoVivienda} onChange={e=>upd({tipoVivienda:e.target.value})} className="w-full px-4 sm:px-5 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl outline-none focus:bg-white focus:border-blue-500 text-gray-700 transition-colors cursor-pointer text-base">{TIPOS.map(t=><option key={t} value={t}>{t}</option>)}</select></div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                    <Counter label="Habitaciones" value={fd.habitaciones} onChange={v=>upd({habitaciones:v})}/>
+                    <Counter label="Baños" value={fd.banos} onChange={v=>upd({banos:v})}/>
+                  </div>
+                  
+                  <div className="pt-2">
+                    <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-3">Extras de la propiedad (Opcional)</label>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+                      <Toggle label="Ascensor" active={fd.ascensor} onClick={()=>upd({ascensor:!fd.ascensor})} color={S.primaryColor} iconPath={ICONS.elevator}/>
+                      <Toggle label="Piscina" active={fd.piscina} onClick={()=>upd({piscina:!fd.piscina})} color={S.primaryColor} iconPath={ICONS.pool}/>
+                      <Toggle label="Trastero" active={fd.trastero} onClick={()=>upd({trastero:!fd.trastero})} color={S.primaryColor} iconPath={ICONS.storage}/>
+                      <Toggle label="Garaje" active={fd.garaje} onClick={()=>upd({garaje:!fd.garaje})} color={S.primaryColor} iconPath={ICONS.garage}/>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2 sm:gap-4 pt-4">
+                    <button onClick={prev} className="flex-1 py-3 sm:py-4 border-2 border-gray-200 rounded-2xl font-bold text-center text-gray-500 hover:bg-gray-50 transition-all text-sm sm:text-base">Atrás</button>
+                    <button onClick={next} className={"flex-[2] py-3 sm:py-4 rounded-2xl font-bold text-center transition-all text-base sm:text-lg "+(S.showBorder?"shadow-md sm:shadow-lg":"")} style={{backgroundColor:S.primaryColor,color:btnTextColor}}>Siguiente paso</button>
+                  </div>
+                </div>
+              )}
+
+              {/* STEP 3: CONTACT INFO & OTP */}
+              {uiState === 'idle' && step === 3 && (
+                <div className="space-y-4 sm:space-y-5 mt-6 sm:mt-8 anim-slide-up relative max-w-2xl mx-auto">
+                  <div style={{position:'absolute', left:'-9999px', top:'-9999px'}} aria-hidden="true">
+                    <label>No rellenar este campo si eres humano</label>
+                    <input type="text" tabIndex="-1" autoComplete="off" value={fd.honeypot} onChange={e=>upd({honeypot:e.target.value})} />
+                  </div>
+                  
+                  <h2 className={"text-xl sm:text-2xl font-extrabold tracking-tight mb-2 sm:mb-4 " + (isShortMode ? "text-center" : "")} style={{color:S.textColor}}>
+                      {isShortMode ? 'Que me llame un experto' : S.texts.step3Title}
+                  </h2>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                    <div className="col-span-1 sm:col-span-2"><label className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 sm:mb-2">Nombre Completo</label><input type="text" value={fd.nombreCompleto} onChange={e=>upd({nombreCompleto:e.target.value})} className="w-full px-4 sm:px-5 py-3 sm:py-3.5 bg-gray-50 border border-gray-200 rounded-2xl outline-none focus:bg-white text-gray-700 focus:border-blue-500 transition-colors text-base" placeholder="Juan Pérez"/></div>
+                    <div><label className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 sm:mb-2">Email</label><input type="email" value={fd.email} onChange={e=>upd({email:e.target.value})} className={"w-full px-4 sm:px-5 py-3 sm:py-3.5 bg-gray-50 border rounded-2xl outline-none text-gray-700 transition-colors focus:bg-white text-base " + (fd.email && !isValidEmail(fd.email) ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-blue-500')} placeholder="tu@email.com"/>{fd.email && !isValidEmail(fd.email) && <p className="text-[10px] text-red-500 mt-1">Formato de email inválido</p>}</div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 sm:mb-2">Teléfono</label>
+                      <div className={"flex items-center w-full bg-gray-50 border rounded-2xl focus-within:bg-white overflow-hidden " + (fd.telefono && !isValidPhoneStrict(fd.telefono, fd.countryCode) ? 'border-red-300 focus-within:border-red-500' : 'border-gray-200 focus-within:border-blue-500')}>
+                        <select value={fd.countryCode} onChange={e=>upd({countryCode:e.target.value})} className="bg-transparent text-gray-700 text-base py-3 sm:py-3.5 pl-3 sm:pl-4 pr-6 sm:pr-8 outline-none border-r border-gray-200 cursor-pointer appearance-none" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'%239ca3af\'%3E%3Cpath stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M19 9l-7 7-7-7\'/%3E%3C/svg%3E")', backgroundPosition: 'right 0.25rem center', backgroundSize: '1em' }}>
+                           {COUNTRY_CODES.map(c => <option key={c.code} value={c.code}>{c.label}</option>)}
+                        </select>
+                        <input type="tel" required={S.mandatoryFields.telefono} value={fd.telefono} onChange={handlePhoneChange} className="flex-1 px-3 py-3 sm:py-3.5 outline-none text-gray-700 bg-transparent w-full text-base" placeholder="600 000 000"/>
+                      </div>
+                      {fd.telefono && !isValidPhoneStrict(fd.telefono, fd.countryCode) && <p className="text-[10px] text-red-500 mt-1">Teléfono inválido para este país</p>}
+                    </div>
+                  </div>
+                  
+                  <div className={"p-3 sm:p-4 bg-gray-50 rounded-2xl space-y-3 sm:space-y-4 border border-gray-100 mt-2 sm:mt-4"}>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3"><label className="text-xs sm:text-sm font-semibold text-gray-700">¿Es usted el propietario?</label><div className="flex gap-2"><button onClick={()=>upd({esPropietario:true})} className={"px-4 sm:px-5 py-2 rounded-xl text-base font-bold text-center border-2 transition-all flex-1 sm:flex-none "+(fd.esPropietario?"bg-white border-gray-900 shadow-sm":"bg-transparent border-transparent text-gray-400")}>Sí</button><button onClick={()=>upd({esPropietario:false})} className={"px-4 sm:px-5 py-2 rounded-xl text-base font-bold text-center border-2 transition-all flex-1 sm:flex-none "+(!fd.esPropietario?"bg-white border-gray-900 shadow-sm":"bg-transparent border-transparent text-gray-400")}>No</button></div></div>
+                    <div className={"grid grid-cols-1 gap-3 sm:gap-4 " + (isShortMode ? "" : "sm:grid-cols-2")}>
+                      <div><label className="block text-[10px] sm:text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 sm:mb-2">Motivo</label><select value={fd.motivoValoracion} onChange={e=>upd({motivoValoracion:e.target.value})} className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-white border border-gray-200 rounded-xl outline-none text-gray-700 focus:border-blue-500 transition-colors cursor-pointer text-base">{MOTIVOS.map(t=><option key={t} value={t}>{t}</option>)}</select></div>
+                      {!isShortMode && (
+                        <div><label className="block text-[10px] sm:text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 sm:mb-2">Plazo de venta</label><select value={fd.plazoVenta} onChange={e=>upd({plazoVenta:e.target.value})} className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-white border border-gray-200 rounded-xl outline-none text-gray-700 focus:border-blue-500 transition-colors cursor-pointer text-base">{PLAZOS.map(t=><option key={t} value={t}>{t}</option>)}</select></div>
+                      )}
+                    </div>
+                  </div>
+
+                  <label className="flex items-start gap-2.5 sm:gap-3 mt-1 sm:mt-2 cursor-pointer group">
+                    <input type="checkbox" checked={fd.consentimiento} onChange={e=>upd({consentimiento:e.target.checked})} className="mt-0.5 w-4 h-4 sm:w-5 sm:h-5 rounded border-gray-300 cursor-pointer" style={{accentColor: S.primaryColor}}/>
+                    <span className="text-[11px] sm:text-xs text-gray-500 leading-relaxed font-medium group-hover:text-gray-700 transition-colors">He leído y acepto las condiciones de la <a href={S.privacyPolicyUrl || "https://www.sowper.com"} target="_blank" rel="noopener noreferrer" style={{color:S.primaryColor}} className="font-bold hover:underline">política de privacidad</a>.</span>
+                  </label>
+
+                  <div className="flex gap-2 sm:gap-4 pt-2">
+                    {!S.forceQuick && (
+                      <button onClick={() => { if(isQuickPro) { setIsQuickPro(false); setStep(1); } else { prev(); } }} className="flex-1 py-3 sm:py-4 border-2 border-gray-200 rounded-2xl font-bold text-center text-gray-500 hover:bg-gray-50 transition-all text-sm sm:text-base">Atrás</button>
+                    )}
+                    <button 
+                      onClick={() => isShortMode ? submitFinalData('QUICK_PRO') : (S.smsVerificationActive ? triggerOtp() : setStep(4))} 
+                      disabled={!fd.nombreCompleto||!isValidEmail(fd.email)||(S.mandatoryFields.telefono ? !isValidPhoneStrict(fd.telefono, fd.countryCode) : (fd.telefono && !isValidPhoneStrict(fd.telefono, fd.countryCode))) || !fd.consentimiento || otpLoading || uiState === 'submitting_pro'} 
+                      className={"flex-[2] py-3 sm:py-4 rounded-2xl font-bold text-center transition-all disabled:opacity-50 flex items-center justify-center gap-2 text-base sm:text-lg "+((S.showBorder && !S.forceQuick)?"shadow-md sm:shadow-lg hover:scale-[1.02]":"")} 
+                      style={{backgroundColor:S.primaryColor,color:btnTextColor}}
+                    >
+                        {otpLoading || uiState === 'submitting_pro' ? 'Procesando...' : (isShortMode ? 'Solicitar Llamada' : (S.smsVerificationActive ? 'Verificar y Continuar' : 'Continuar'))}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* RENDER OTP MODAL HERE SO IT OVERLAYS EVERYTHING */}
+              {showOtp && (
+                  <OtpOverlay 
+                      phone={fd.countryCode + " " + fd.telefono} 
+                      code={otpCode} 
+                      setCode={setOtpCode} 
+                      onVerify={verifyOtpAndSubmit} 
+                      loading={otpLoading} 
+                      error={otpError} 
+                      onBack={() => { setShowOtp(false); setOtpCode(''); }} 
+                  />
+              )}
+
+              {/* STEP 4: BIFURCATION SCREEN */}
+              {uiState === 'idle' && step === 4 && (
+                <div className="space-y-6 sm:space-y-8 mt-6 sm:mt-8 anim-slide-up w-full">
+                  <div className="text-center px-2 sm:px-4">
+                      <h2 className="text-xl sm:text-2xl md:text-3xl font-black mb-2 sm:mb-3 text-gray-900 leading-tight">¿Quieres saber el <span style={{color: '#FFCC00'}}>valor real</span> de tu vivienda o una estimación orientativa?</h2>
+                      <p className="text-gray-500 text-sm sm:text-base font-medium">Tú eliges, sin compromiso. Ambas opciones son gratuitas.</p>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
+                    {/* PROFESSIONAL BOX */}
+                    <div className="border-[3px] rounded-2xl sm:rounded-3xl p-5 sm:p-8 flex flex-col relative hover:shadow-xl transition-all hover:-translate-y-1 cursor-pointer" style={{borderColor: '#FFCC00', backgroundColor: '#FFFCF0'}} onClick={() => submitFinalData('PRO')}>
+                      <div className="absolute -top-3 sm:-top-4 left-4 sm:left-6 text-gray-900 text-[9px] sm:text-[11px] font-black uppercase tracking-widest px-3 sm:px-4 py-1 sm:py-1.5 rounded-full flex items-center gap-1.5 shadow-md" style={{backgroundColor: '#FFCC00'}}>
+                        <svg width="12" height="12" className="sm:w-3.5 sm:h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg> RECOMENDADO
+                      </div>
+                      
+                      <div className="flex items-center gap-4 sm:gap-5 mb-4 sm:mb-6 mt-1 sm:mt-2">
+                        <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center shrink-0 text-gray-900 shadow-sm" style={{backgroundColor: '#FFCC00'}}><svg width="24" height="24" className="sm:w-[30px] sm:h-[30px]" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg></div>
+                        <div className="text-left">
+                          <h3 className="font-black text-gray-900 leading-tight text-lg sm:text-xl mb-0.5 sm:mb-1">Valor real de tu vivienda</h3>
+                          <span className="text-xs sm:text-sm text-gray-500 font-semibold">con un experto técnico</span>
+                        </div>
+                      </div>
+                      
+                      <p className="text-xs sm:text-sm text-gray-600 mb-6 sm:mb-8 leading-relaxed flex-grow">Un experto técnico analiza tu vivienda en detalle y te da un valor real ajustado al mercado actual.</p>
+                      
+                      <div className="flex items-end justify-between mb-2 sm:mb-3">
+                        <span className="text-[10px] sm:text-xs font-black text-gray-400 uppercase tracking-widest">Precisión:</span>
+                        <span className="text-3xl sm:text-4xl font-black leading-none" style={{color: '#FFCC00'}}>5/5</span>
+                      </div>
+                      <div className="flex gap-1.5 sm:gap-2 mb-6 sm:mb-8 h-2 sm:h-2.5">
+                         {[1,2,3,4,5].map(i => <div key={i} className="flex-1 rounded-full" style={{backgroundColor: '#FFCC00'}}></div>)}
+                      </div>
+                      
+                      <div className="mt-auto">
+                        <button className="w-full py-3.5 sm:py-4 text-gray-900 font-black text-base sm:text-lg rounded-xl transition-all shadow-md flex items-center justify-center gap-2 hover:opacity-90" style={{backgroundColor: '#FFCC00'}}>
+                          Quiero saber el valor real
+                          <svg width="18" height="18" className="sm:w-5 sm:h-5" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
+                        </button>
+                        <div className="mt-3 sm:mt-4 flex flex-col items-center gap-1 sm:gap-1.5">
+                            <span className="text-[11px] sm:text-xs text-gray-600 font-bold flex items-center gap-1 sm:gap-1.5"><svg width="12" height="12" className="sm:w-3.5 sm:h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" style={{color: '#FFCC00'}}><path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg> Te llamaremos en menos de 24h</span>
+                            <span className="text-[9px] sm:text-[11px] text-gray-400 font-medium">Valoración profesional - Sin compromiso</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* AI BOX */}
+                    <div className="border-[3px] border-indigo-50 rounded-2xl sm:rounded-3xl p-5 sm:p-8 bg-white flex flex-col relative hover:shadow-xl transition-all hover:-translate-y-1 cursor-pointer" onClick={() => submitFinalData('IA')}>
+                      <div className="flex items-center gap-4 sm:gap-5 mb-4 sm:mb-6 mt-1 sm:mt-2">
+                        <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl bg-indigo-100 flex items-center justify-center text-indigo-600 shrink-0 shadow-sm"><svg width="24" height="24" className="sm:w-[30px] sm:h-[30px]" fill="currentColor" viewBox="0 0 24 24"><path d="M21 11c0-1.1-.9-2-2-2h-2V7c0-1.1-.9-2-2-2H9c-1.1 0-2 .9-2 2v2H5c-1.1 0-2 .9-2 2v6c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-6zm-4-4v2H7V7h10zm-6 6h2v2h-2v-2z"/></svg></div>
+                        <div className="text-left">
+                          <h3 className="font-black text-gray-900 leading-tight text-lg sm:text-xl mb-0.5 sm:mb-1">Estimación orientativa</h3>
+                          <span className="text-xs sm:text-sm text-gray-500 font-semibold">con IA</span>
+                        </div>
+                      </div>
+                      
+                      <p className="text-xs sm:text-sm text-gray-600 mb-6 sm:mb-8 leading-relaxed flex-grow">Recibe una estimación aproximada basada en datos de mercado y algoritmos, menos precisa con la realidad.</p>
+                      
+                      <div className="flex items-end justify-between mb-2 sm:mb-3">
+                        <span className="text-[10px] sm:text-xs font-black text-gray-400 uppercase tracking-widest">Precisión:</span>
+                        <span className="text-3xl sm:text-4xl font-black text-indigo-600 leading-none">2/5</span>
+                      </div>
+                      <div className="flex gap-1.5 sm:gap-2 mb-6 sm:mb-8 h-2 sm:h-2.5">
+                         {[1,2].map(i => <div key={i} className="flex-1 rounded-full bg-indigo-600"></div>)}
+                         {[3,4,5].map(i => <div key={i} className="flex-1 rounded-full bg-gray-200"></div>)}
+                      </div>
+                      
+                      <div className="mt-auto">
+                        <button className="w-full py-3.5 sm:py-4 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 font-black text-base sm:text-lg rounded-xl transition-all flex items-center justify-center gap-2">
+                            Ver estimación orientativa
+                            <svg width="18" height="18" className="sm:w-5 sm:h-5" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
+                        </button>
+                        <div className="mt-3 sm:mt-4 flex items-center justify-center gap-1 sm:gap-1.5">
+                            <span className="text-[11px] sm:text-xs text-indigo-400 font-bold flex items-center gap-1 sm:gap-1.5"><svg width="12" height="12" className="sm:w-3.5 sm:h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg> Resultado en menos de 1 minuto</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="pt-4 sm:pt-6">
+                      <button onClick={prev} className="w-full sm:w-auto sm:min-w-[200px] mx-auto block py-3.5 sm:py-4 border-2 border-gray-200 rounded-2xl font-bold text-center text-gray-500 hover:bg-gray-50 transition-all text-base sm:text-lg">Atrás</button>
+                  </div>
+                </div>
+              )}
+
+            </div>
+          </div>
+          
+          <div className="mt-2 text-center text-[12px] text-gray-400 font-medium anim-slide-up pb-8">
+            Impulsado por <a href="https://sowper.com" target="_blank" rel="noopener noreferrer" className="hover:text-gray-600 transition-colors">Sowper</a>
+          </div>
+          
+        </div>
+      );
+    };
+  
+
+if (!window.__APP_BLOCKED__) {
+    document.getElementById('init-loader').style.display = 'none';
+    const root=ReactDOM.createRoot(document.getElementById("valuation-engine-root"));
+    root.render(<ValuationForm/>);
+}
+</script>
+</body>
+</html>
